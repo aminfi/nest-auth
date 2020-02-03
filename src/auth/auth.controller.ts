@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 
-import { LoginDto, RegisterDto } from './dto';
+import { LoginDto, RefreshTokenDto, RegisterDto } from './dto';
 import { UserService } from '../user/user.service';
 import { UserRO } from '../user/user.interface';
 import { ForgetPasswordDto } from './dto';
@@ -17,17 +17,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginData: LoginDto): Promise<UserRO> {
-    const user = await this.userService.findOne(loginData);
-    const token = await this.userService.generateJWT(user);
-    const { username, email, ...rest } = user;
-    const userData = { username, email, token };
-
-    return {
-      data: {
-        user: userData,
-        message: 'Successfully logged in.',
-      },
-    };
+    return await this.userService.login(loginData);
   }
 
   @Post('forget-password')
@@ -38,5 +28,10 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordData: ResetPasswordDto) {
     return await this.userService.resetPassword(resetPasswordData);
+  }
+
+  @Post('refresh-token')
+  async refreshToken(@Body() refreshTokenData: RefreshTokenDto) {
+    return await this.userService.refreshToken(refreshTokenData);
   }
 }

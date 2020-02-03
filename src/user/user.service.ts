@@ -7,10 +7,14 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
-import * as ms from 'ms';
 
 import { UserEntity } from './user.entity';
-import { ForgetPasswordDto, LoginDto, RegisterDto } from '../auth/dto';
+import {
+  ForgetPasswordDto,
+  LoginDto,
+  RefreshTokenDto,
+  RegisterDto,
+} from '../auth/dto';
 import { UserRO } from './user.interface';
 import { ResetPasswordDto } from '../auth/dto/reset-password.dto';
 
@@ -42,7 +46,7 @@ export class UserService {
     });
 
     const savedUser = await this.userRepository.save(newUser);
-    return this.buildUserRO(savedUser);
+    return savedUser.buildUserRO('User created successfully.');
   }
 
   async findOne(loginData: LoginDto): Promise<UserEntity> {
@@ -53,13 +57,28 @@ export class UserService {
         {
           data: {
             message: 'Invalid username/password',
-            errors: ['Invalid username/password'],
+            errors: [{ username: 'Invalid username/password' }],
           },
         },
         HttpStatus.BAD_REQUEST,
       );
     }
     return user;
+  }
+
+  async login(loginData: LoginDto): Promise<UserRO> {
+    const user = await this.findOne(loginData);
+    return user.buildUserRO('Successfully logged in.');
+  }
+
+  async findById(id: number): Promise<UserRO> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      this.noUserWereFound();
+    }
+
+    return user.buildUserRO('');
   }
 
   async forgetPassword(forgetPasswordData: ForgetPasswordDto) {
@@ -99,27 +118,26 @@ export class UserService {
     await user.save();
   }
 
-  public generateJWT(user: UserEntity) {
-    return jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        exp: ms(process.env.ACCESS_TOKEN_EXIPRATION_TIME),
-      },
-      process.env.SECRET,
-    );
-  }
+  async refreshToken(refreshTokenData: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenData;
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.SECRET);
+    } catch (e) {
+      const errors = { username: 'No user were found.' };
+      throw new HttpException(
+        { data: { message: 'Token is not valid', errors } },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
 
-  private buildUserRO(user: UserEntity): UserRO {
-    const { username, email } = user;
-    const userRO = {
-      username,
-      email,
-      token: this.generateJWT(user),
-    };
+    const user = await this.findById(decoded.id);
 
-    return { data: { user: userRO, message: 'User created successfully.' } };
+    if (!user) {
+      this.noUserWereFound();
+    }
+
+    return user;
   }
 
   private noUserWereFound() {
