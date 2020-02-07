@@ -96,7 +96,7 @@ export class UserEntity extends BaseEntity {
     const userRO = {
       username: this.username,
       email: this.email,
-      accessToken: this.generateJWT(),
+      accessToken: this.generateJWT(JwtType.ACCESS_TOKEN),
       refreshToken: this.generateJWT(JwtType.REFRESH_TOKEN),
     };
     return { data: { user: userRO, message } };

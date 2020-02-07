@@ -25,6 +25,9 @@ export class AuthGuard implements CanActivate {
       let decoded: any;
       try {
         decoded = jwt.verify(token, process.env.SECRET);
+        if (decoded.exp < Date.now() / 1000) {
+          this.unAuthorized();
+        }
       } catch (e) {
         this.unAuthorized();
       }

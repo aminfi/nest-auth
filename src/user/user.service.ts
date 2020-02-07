@@ -123,6 +123,9 @@ export class UserService {
     let decoded: any;
     try {
       decoded = jwt.verify(refreshToken, process.env.SECRET);
+      if (decoded.exp < Date.now() / 1000) {
+        throw new Error();
+      }
     } catch (e) {
       const errors = { username: 'No user were found.' };
       throw new HttpException(
