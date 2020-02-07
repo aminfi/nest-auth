@@ -1,8 +1,8 @@
 {
-  "name": "todo-api",
+  "name": "nest-auth",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "simple nest authentication",
+  "author": "Mohammad Amin Faraji",
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",
